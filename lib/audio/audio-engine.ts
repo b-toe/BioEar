@@ -1,5 +1,28 @@
-import { createCompressor, createGain, createHighShelf, createLowShelf, createPeaking } from "./filters";
+import {
+  createCompressor,
+  createGain,
+  createHighShelf,
+  createHighpass,
+  createLowShelf,
+  createLowpass,
+  createPeaking,
+} from "./filters";
 import { DEFAULT_PARAMS, EngineParams } from "./presets";
+import { createSpeechBuffer } from "./speech-sample";
+
+// Noise reduction narrows the band to where speech lives: the highpass climbs
+// from 20 Hz to 300 Hz (rumble, hum) and the lowpass falls from 18 kHz to
+// 6.5 kHz (hiss) as the slider goes from 0 to 100.
+function noiseHighpassHz(amount: number) {
+  return 20 * Math.pow(15, amount / 100);
+}
+
+function noiseLowpassHz(amount: number) {
+  return 18000 * Math.pow(6500 / 18000, amount / 100);
+}
+
+// Tones are generated at a moderate level so the gain stage has headroom.
+const TONE_LEVEL = 0.3;
 
 export type SourceKind = "sample" | "tone" | "microphone";
 
@@ -7,15 +30,18 @@ export class BioEarAudioEngine {
   private ctx: AudioContext | null = null;
   private sourceNode: AudioNode | null = null;
   private mediaStream: MediaStream | null = null;
-  private oscillator: OscillatorNode | null = null;
+  private playingSource: AudioScheduledSourceNode | null = null;
 
   private inputGain: GainNode | null = null;
+  private noiseHighpass: BiquadFilterNode | null = null;
+  private noiseLowpass: BiquadFilterNode | null = null;
   private lowFilter: BiquadFilterNode | null = null;
   private midFilter: BiquadFilterNode | null = null;
   private highFilter: BiquadFilterNode | null = null;
   private speechFilter: BiquadFilterNode | null = null;
   private compressor: DynamicsCompressorNode | null = null;
   private outputGain: GainNode | null = null;
+  private monitorGain: GainNode | null = null;
 
   public rawAnalyser: AnalyserNode | null = null;
   public processedAnalyser: AnalyserNode | null = null;
@@ -27,15 +53,18 @@ export class BioEarAudioEngine {
     return this.ctx;
   }
 
-  private buildChain(params: EngineParams) {
+  private buildChain(params: EngineParams, monitor: boolean) {
     const ctx = this.ensureContext();
     this.inputGain = createGain(ctx, params.gain / 50);
+    this.noiseHighpass = createHighpass(ctx, noiseHighpassHz(params.noiseReduction));
+    this.noiseLowpass = createLowpass(ctx, noiseLowpassHz(params.noiseReduction));
     this.lowFilter = createLowShelf(ctx, 300, (params.low - 50) / 2.5);
     this.midFilter = createPeaking(ctx, 1500, (params.mid - 50) / 2.5, 0.9);
     this.highFilter = createHighShelf(ctx, 4000, (params.high - 50) / 2.5);
     this.speechFilter = createPeaking(ctx, 2500, (params.speechEmphasis / 100) * 12, 1.4);
     this.compressor = createCompressor(ctx, params.compression);
     this.outputGain = createGain(ctx, 1);
+    this.monitorGain = createGain(ctx, monitor ? 1 : 0);
 
     this.rawAnalyser = ctx.createAnalyser();
     this.rawAnalyser.fftSize = 2048;
@@ -45,14 +74,17 @@ export class BioEarAudioEngine {
 
   private connectChain() {
     if (
-      !this.sourceNode || !this.inputGain || !this.lowFilter || !this.midFilter ||
+      !this.sourceNode || !this.inputGain || !this.noiseHighpass || !this.noiseLowpass || !this.lowFilter || !this.midFilter ||
       !this.highFilter || !this.speechFilter || !this.compressor || !this.outputGain ||
+      !this.monitorGain ||
       !this.rawAnalyser || !this.processedAnalyser || !this.ctx
     ) return;
 
     this.sourceNode.connect(this.rawAnalyser);
     this.sourceNode.connect(this.inputGain);
     this.inputGain
+      .connect(this.noiseHighpass)
+      .connect(this.noiseLowpass)
       .connect(this.lowFilter)
       .connect(this.midFilter)
       .connect(this.highFilter)
@@ -60,20 +92,20 @@ export class BioEarAudioEngine {
       .connect(this.compressor)
       .connect(this.outputGain);
     this.outputGain.connect(this.processedAnalyser);
-    this.outputGain.connect(this.ctx.destination);
+    this.outputGain.connect(this.monitorGain).connect(this.ctx.destination);
   }
 
-  async startSample(url: string, params: EngineParams = DEFAULT_PARAMS): Promise<void> {
+  async startSample(params: EngineParams = DEFAULT_PARAMS): Promise<void> {
     const ctx = this.ensureContext();
     await ctx.resume();
-    const audioEl = new Audio(url);
-    audioEl.loop = true;
-    audioEl.crossOrigin = "anonymous";
-    const mediaSource = ctx.createMediaElementSource(audioEl);
-    this.sourceNode = mediaSource;
-    this.buildChain(params);
+    const source = ctx.createBufferSource();
+    source.buffer = createSpeechBuffer(ctx);
+    source.loop = true;
+    this.playingSource = source;
+    this.sourceNode = source;
+    this.buildChain(params, true);
     this.connectChain();
-    await audioEl.play();
+    source.start();
   }
 
   async startTone(freq: number, params: EngineParams = DEFAULT_PARAMS): Promise<void> {
@@ -82,31 +114,45 @@ export class BioEarAudioEngine {
     const osc = ctx.createOscillator();
     osc.type = "sine";
     osc.frequency.value = freq;
-    this.oscillator = osc;
-    this.sourceNode = osc;
-    this.buildChain(params);
+    const level = createGain(ctx, TONE_LEVEL);
+    osc.connect(level);
+    this.playingSource = osc;
+    this.sourceNode = level;
+    this.buildChain(params, true);
     this.connectChain();
     osc.start();
   }
 
-  async startMicrophone(params: EngineParams = DEFAULT_PARAMS): Promise<void> {
+  // The microphone is not sent to the speakers unless `monitor` is true:
+  // playing it back through open speakers feeds back into the mic and howls.
+  async startMicrophone(params: EngineParams = DEFAULT_PARAMS, monitor = false): Promise<void> {
     const ctx = this.ensureContext();
     await ctx.resume();
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false },
+    });
     this.mediaStream = stream;
     const micSource = ctx.createMediaStreamSource(stream);
     this.sourceNode = micSource;
-    this.buildChain(params);
+    this.buildChain(params, monitor);
     this.connectChain();
   }
 
+  setMonitor(monitor: boolean) {
+    if (!this.monitorGain) return;
+    this.monitorGain.gain.value = monitor ? 1 : 0;
+  }
+
   updateParams(params: EngineParams) {
-    if (!this.inputGain || !this.lowFilter || !this.midFilter || !this.highFilter || !this.speechFilter || !this.compressor) return;
+    if (!this.inputGain || !this.noiseHighpass || !this.noiseLowpass || !this.lowFilter || !this.midFilter || !this.highFilter || !this.speechFilter || !this.compressor) return;
     this.inputGain.gain.value = params.gain / 50;
+    this.noiseHighpass.frequency.value = noiseHighpassHz(params.noiseReduction);
+    this.noiseLowpass.frequency.value = noiseLowpassHz(params.noiseReduction);
     this.lowFilter.gain.value = (params.low - 50) / 2.5;
     this.midFilter.gain.value = (params.mid - 50) / 2.5;
     this.highFilter.gain.value = (params.high - 50) / 2.5;
     this.speechFilter.gain.value = (params.speechEmphasis / 100) * 12;
+    this.compressor.threshold.value = -50 + (1 - params.compression / 100) * 30;
     this.compressor.ratio.value = 2 + (params.compression / 100) * 10;
   }
 
@@ -116,8 +162,8 @@ export class BioEarAudioEngine {
   }
 
   stop() {
-    this.oscillator?.stop();
-    this.oscillator = null;
+    this.playingSource?.stop();
+    this.playingSource = null;
     this.mediaStream?.getTracks().forEach((t) => t.stop());
     this.mediaStream = null;
     this.sourceNode = null;

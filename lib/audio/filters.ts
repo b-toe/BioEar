@@ -38,3 +38,17 @@ export function createGain(ctx: AudioContext, value: number): GainNode {
   node.gain.value = value;
   return node;
 }
+
+export function createHighpass(ctx: AudioContext, freq: number): BiquadFilterNode {
+  const node = ctx.createBiquadFilter();
+  node.type = "highpass";
+  node.frequency.value = freq;
+  return node;
+}
+
+export function createLowpass(ctx: AudioContext, freq: number): BiquadFilterNode {
+  const node = ctx.createBiquadFilter();
+  node.type = "lowpass";
+  node.frequency.value = freq;
+  return node;
+}

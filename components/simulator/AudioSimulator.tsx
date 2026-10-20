@@ -23,6 +23,7 @@ export function AudioSimulator() {
   const [viewMode, setViewMode] = useState<"waveform" | "spectrum">("waveform");
   const [showProcessed, setShowProcessed] = useState(true);
   const [micDenied, setMicDenied] = useState(false);
+  const [micMonitor, setMicMonitor] = useState(false);
   const [analysers, setAnalysers] = useState<{ raw: AnalyserNode | null; processed: AnalyserNode | null }>({
     raw: null,
     processed: null,
@@ -46,8 +47,7 @@ export function AudioSimulator() {
   async function startSample() {
     stop();
     const engine = engineRef.current!;
-    // Synthesized speech-like demo tone — a stand-in until a recorded voice sample asset is added.
-    await engine.startTone(320, params);
+    await engine.startSample(params);
     setAnalysers({ raw: engine.rawAnalyser, processed: engine.processedAnalyser });
     setMode("sample");
   }
@@ -56,7 +56,7 @@ export function AudioSimulator() {
     stop();
     try {
       const engine = engineRef.current!;
-      await engine.startMicrophone(params);
+      await engine.startMicrophone(params, micMonitor);
       setAnalysers({ raw: engine.rawAnalyser, processed: engine.processedAnalyser });
       setMode("microphone");
       setMicDenied(false);
@@ -70,6 +70,11 @@ export function AudioSimulator() {
     engineRef.current = new BioEarAudioEngine();
     setAnalysers({ raw: null, processed: null });
     setMode("idle");
+  }
+
+  function toggleMicMonitor(next: boolean) {
+    setMicMonitor(next);
+    engineRef.current?.setMonitor(next);
   }
 
   function updateParams(next: Partial<EngineParams>) {
@@ -108,6 +113,17 @@ export function AudioSimulator() {
           <Mic size={16} /> Microphone
         </Button>
       </div>
+      {mode === "microphone" && (
+        <label className="flex items-center gap-2 text-sm text-gray">
+          <input
+            type="checkbox"
+            checked={micMonitor}
+            onChange={(e) => toggleMicMonitor(e.target.checked)}
+            className="accent-[var(--lavender)]"
+          />
+          Play the processed microphone through my speakers (use headphones to avoid feedback)
+        </label>
+      )}
       {micDenied && (
         <p className="text-sm text-gray">Microphone access was not granted. Try the sample voice or tone generator instead.</p>
       )}
