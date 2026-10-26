@@ -22,8 +22,8 @@ export const PRESETS: Record<string, EngineParams> = {
   natural: { gain: 55, low: 50, mid: 50, high: 50, speechEmphasis: 10, noiseReduction: 5, compression: 10 },
   speechFocus: { gain: 65, low: 35, mid: 65, high: 55, speechEmphasis: 75, noiseReduction: 30, compression: 30 },
   quietRoom: { gain: 50, low: 50, mid: 50, high: 45, speechEmphasis: 20, noiseReduction: 10, compression: 15 },
-  noisyRoom: { gain: 70, low: 30, mid: 60, high: 50, speechEmphasis: 70, noiseReduction: 70, compression: 55 },
-  bioearPrototype: { gain: 65, low: 40, mid: 60, high: 55, speechEmphasis: 60, noiseReduction: 45, compression: 35 },
+  noisyRoom: { gain: 70, low: 20, mid: 62, high: 50, speechEmphasis: 80, noiseReduction: 85, compression: 55 },
+  bioearPrototype: { gain: 65, low: 30, mid: 62, high: 58, speechEmphasis: 75, noiseReduction: 60, compression: 40 },
 };
 
 export const PRESET_LABELS: Record<keyof typeof PRESETS, { name: string; description: string }> = {

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Mic, Square, Waves } from "lucide-react";
 import { BioEarAudioEngine } from "@/lib/audio/audio-engine";
-import { DEFAULT_PARAMS, EngineParams, PRESETS } from "@/lib/audio/presets";
+import { EngineParams, PRESETS } from "@/lib/audio/presets";
 import { WaveformCanvas } from "./WaveformCanvas";
 import { FrequencyVisualizer } from "./FrequencyVisualizer";
 import { ProcessingModes } from "./ProcessingModes";
@@ -18,8 +18,8 @@ type Mode = "idle" | "tone" | "microphone" | "sample";
 export function AudioSimulator() {
   const engineRef = useRef<BioEarAudioEngine | null>(null);
   const [mode, setMode] = useState<Mode>("idle");
-  const [params, setParams] = useState<EngineParams>(DEFAULT_PARAMS);
-  const [activePreset, setActivePreset] = useState<keyof typeof PRESETS>("natural");
+  const [params, setParams] = useState<EngineParams>(PRESETS.bioearPrototype);
+  const [activePreset, setActivePreset] = useState<keyof typeof PRESETS>("bioearPrototype");
   const [viewMode, setViewMode] = useState<"waveform" | "spectrum">("waveform");
   const [showProcessed, setShowProcessed] = useState(true);
   const [micDenied, setMicDenied] = useState(false);
@@ -68,8 +68,16 @@ export function AudioSimulator() {
   function stop() {
     engineRef.current?.stop();
     engineRef.current = new BioEarAudioEngine();
+    engineRef.current.setListenProcessed(showProcessed);
     setAnalysers({ raw: null, processed: null });
     setMode("idle");
+  }
+
+  // The Raw / BioEar processed switch changes what you hear as well as what
+  // the visualizer shows, so the two can be compared by ear.
+  function selectProcessed(processed: boolean) {
+    setShowProcessed(processed);
+    engineRef.current?.setListenProcessed(processed);
   }
 
   function toggleMicMonitor(next: boolean) {
@@ -138,14 +146,14 @@ export function AudioSimulator() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="inline-flex rounded-full border border-ink/10 p-1">
             <button
-              onClick={() => setShowProcessed(false)}
+              onClick={() => selectProcessed(false)}
               aria-pressed={!showProcessed}
               className={cn("rounded-full px-4 py-1.5 text-xs font-medium", !showProcessed ? "bg-ink text-cream" : "text-gray")}
             >
               Raw signal
             </button>
             <button
-              onClick={() => setShowProcessed(true)}
+              onClick={() => selectProcessed(true)}
               aria-pressed={showProcessed}
               className={cn("rounded-full px-4 py-1.5 text-xs font-medium", showProcessed ? "bg-ink text-cream" : "text-gray")}
             >

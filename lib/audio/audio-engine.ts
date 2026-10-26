@@ -42,6 +42,11 @@ export class BioEarAudioEngine {
   private compressor: DynamicsCompressorNode | null = null;
   private outputGain: GainNode | null = null;
   private monitorGain: GainNode | null = null;
+  // Choose which version reaches the speakers: the untouched input or the
+  // BioEar-processed signal. Both analysers keep running either way.
+  private rawOut: GainNode | null = null;
+  private processedOut: GainNode | null = null;
+  private listenProcessed = true;
 
   public rawAnalyser: AnalyserNode | null = null;
   public processedAnalyser: AnalyserNode | null = null;
@@ -65,6 +70,8 @@ export class BioEarAudioEngine {
     this.compressor = createCompressor(ctx, params.compression);
     this.outputGain = createGain(ctx, 1);
     this.monitorGain = createGain(ctx, monitor ? 1 : 0);
+    this.rawOut = createGain(ctx, this.listenProcessed ? 0 : 1);
+    this.processedOut = createGain(ctx, this.listenProcessed ? 1 : 0);
 
     this.rawAnalyser = ctx.createAnalyser();
     this.rawAnalyser.fftSize = 2048;
@@ -76,7 +83,7 @@ export class BioEarAudioEngine {
     if (
       !this.sourceNode || !this.inputGain || !this.noiseHighpass || !this.noiseLowpass || !this.lowFilter || !this.midFilter ||
       !this.highFilter || !this.speechFilter || !this.compressor || !this.outputGain ||
-      !this.monitorGain ||
+      !this.monitorGain || !this.rawOut || !this.processedOut ||
       !this.rawAnalyser || !this.processedAnalyser || !this.ctx
     ) return;
 
@@ -92,7 +99,9 @@ export class BioEarAudioEngine {
       .connect(this.compressor)
       .connect(this.outputGain);
     this.outputGain.connect(this.processedAnalyser);
-    this.outputGain.connect(this.monitorGain).connect(this.ctx.destination);
+    this.sourceNode.connect(this.rawOut).connect(this.monitorGain);
+    this.outputGain.connect(this.processedOut).connect(this.monitorGain);
+    this.monitorGain.connect(this.ctx.destination);
   }
 
   async startSample(params: EngineParams = DEFAULT_PARAMS): Promise<void> {
@@ -156,9 +165,13 @@ export class BioEarAudioEngine {
     this.compressor.ratio.value = 2 + (params.compression / 100) * 10;
   }
 
-  setBypass(bypass: boolean) {
-    if (!this.outputGain) return;
-    this.outputGain.gain.value = bypass ? 0 : 1;
+  setListenProcessed(processed: boolean) {
+    this.listenProcessed = processed;
+    if (!this.ctx || !this.rawOut || !this.processedOut) return;
+    // Short crossfade so switching doesn't click.
+    const now = this.ctx.currentTime;
+    this.rawOut.gain.setTargetAtTime(processed ? 0 : 1, now, 0.02);
+    this.processedOut.gain.setTargetAtTime(processed ? 1 : 0, now, 0.02);
   }
 
   stop() {
