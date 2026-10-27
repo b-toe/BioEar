@@ -29,10 +29,20 @@ export function AudioSimulator() {
     processed: null,
   });
 
+  const mountedRef = useRef(false);
+
+  // The engine is created by stop() when playback starts rather than on mount,
+  // so a click that lands before effects have run can't leave an orphaned
+  // engine playing that Stop and the Raw/processed switch no longer reach.
+  // Stopping on unmount is deferred so React's dev-only unmount/remount check
+  // doesn't kill audio that such an early click has just started.
   useEffect(() => {
-    engineRef.current = new BioEarAudioEngine();
+    mountedRef.current = true;
     return () => {
-      engineRef.current?.stop();
+      mountedRef.current = false;
+      setTimeout(() => {
+        if (!mountedRef.current) engineRef.current?.stop();
+      });
     };
   }, []);
 

@@ -21,6 +21,41 @@ function noiseLowpassHz(amount: number) {
   return 18000 * Math.pow(6500 / 18000, amount / 100);
 }
 
+// The gain slider is BioEar's amplification, applied after the EQ and
+// compressor: 0 is no boost and 100 is +24 dB. A limiter after it keeps the
+// boosted signal from clipping, so "BioEar processed" is clearly louder than
+// the untouched raw signal without distorting.
+const MAX_BOOST_DB = 24;
+
+function amplification(gain: number) {
+  return Math.pow(10, ((gain / 100) * MAX_BOOST_DB) / 20);
+}
+
+function createLimiter(ctx: AudioContext): DynamicsCompressorNode {
+  const node = ctx.createDynamicsCompressor();
+  node.threshold.value = -6;
+  node.knee.value = 0;
+  node.ratio.value = 20;
+  node.attack.value = 0.001;
+  node.release.value = 0.1;
+  return node;
+}
+
+// The limiter can overshoot on sharp attacks. This curve is linear up to 0.7
+// (where the limited signal normally sits) and only rounds off anything
+// louder, so the output never hard-clips.
+function createSoftClipper(ctx: AudioContext): WaveShaperNode {
+  const node = ctx.createWaveShaper();
+  const curve = new Float32Array(1024);
+  for (let i = 0; i < curve.length; i++) {
+    const x = (i / (curve.length - 1)) * 2 - 1;
+    const over = Math.abs(x) - 0.7;
+    curve[i] = over <= 0 ? x : Math.sign(x) * (0.7 + 0.3 * Math.tanh(over / 0.3));
+  }
+  node.curve = curve;
+  return node;
+}
+
 // Tones are generated at a moderate level so the gain stage has headroom.
 const TONE_LEVEL = 0.3;
 
@@ -41,6 +76,8 @@ export class BioEarAudioEngine {
   private speechFilter: BiquadFilterNode | null = null;
   private compressor: DynamicsCompressorNode | null = null;
   private outputGain: GainNode | null = null;
+  private limiter: DynamicsCompressorNode | null = null;
+  private clipper: WaveShaperNode | null = null;
   private monitorGain: GainNode | null = null;
   // Choose which version reaches the speakers: the untouched input or the
   // BioEar-processed signal. Both analysers keep running either way.
@@ -60,7 +97,7 @@ export class BioEarAudioEngine {
 
   private buildChain(params: EngineParams, monitor: boolean) {
     const ctx = this.ensureContext();
-    this.inputGain = createGain(ctx, params.gain / 50);
+    this.inputGain = createGain(ctx, 1);
     this.noiseHighpass = createHighpass(ctx, noiseHighpassHz(params.noiseReduction));
     this.noiseLowpass = createLowpass(ctx, noiseLowpassHz(params.noiseReduction));
     this.lowFilter = createLowShelf(ctx, 300, (params.low - 50) / 2.5);
@@ -68,7 +105,9 @@ export class BioEarAudioEngine {
     this.highFilter = createHighShelf(ctx, 4000, (params.high - 50) / 2.5);
     this.speechFilter = createPeaking(ctx, 2500, (params.speechEmphasis / 100) * 12, 1.4);
     this.compressor = createCompressor(ctx, params.compression);
-    this.outputGain = createGain(ctx, 1);
+    this.outputGain = createGain(ctx, amplification(params.gain));
+    this.limiter = createLimiter(ctx);
+    this.clipper = createSoftClipper(ctx);
     this.monitorGain = createGain(ctx, monitor ? 1 : 0);
     this.rawOut = createGain(ctx, this.listenProcessed ? 0 : 1);
     this.processedOut = createGain(ctx, this.listenProcessed ? 1 : 0);
@@ -82,7 +121,7 @@ export class BioEarAudioEngine {
   private connectChain() {
     if (
       !this.sourceNode || !this.inputGain || !this.noiseHighpass || !this.noiseLowpass || !this.lowFilter || !this.midFilter ||
-      !this.highFilter || !this.speechFilter || !this.compressor || !this.outputGain ||
+      !this.highFilter || !this.speechFilter || !this.compressor || !this.outputGain || !this.limiter || !this.clipper ||
       !this.monitorGain || !this.rawOut || !this.processedOut ||
       !this.rawAnalyser || !this.processedAnalyser || !this.ctx
     ) return;
@@ -97,10 +136,12 @@ export class BioEarAudioEngine {
       .connect(this.highFilter)
       .connect(this.speechFilter)
       .connect(this.compressor)
-      .connect(this.outputGain);
-    this.outputGain.connect(this.processedAnalyser);
+      .connect(this.outputGain)
+      .connect(this.limiter)
+      .connect(this.clipper);
+    this.clipper.connect(this.processedAnalyser);
     this.sourceNode.connect(this.rawOut).connect(this.monitorGain);
-    this.outputGain.connect(this.processedOut).connect(this.monitorGain);
+    this.clipper.connect(this.processedOut).connect(this.monitorGain);
     this.monitorGain.connect(this.ctx.destination);
   }
 
@@ -153,8 +194,8 @@ export class BioEarAudioEngine {
   }
 
   updateParams(params: EngineParams) {
-    if (!this.inputGain || !this.noiseHighpass || !this.noiseLowpass || !this.lowFilter || !this.midFilter || !this.highFilter || !this.speechFilter || !this.compressor) return;
-    this.inputGain.gain.value = params.gain / 50;
+    if (!this.inputGain || !this.noiseHighpass || !this.noiseLowpass || !this.lowFilter || !this.midFilter || !this.highFilter || !this.speechFilter || !this.compressor || !this.outputGain) return;
+    this.outputGain.gain.value = amplification(params.gain);
     this.noiseHighpass.frequency.value = noiseHighpassHz(params.noiseReduction);
     this.noiseLowpass.frequency.value = noiseLowpassHz(params.noiseReduction);
     this.lowFilter.gain.value = (params.low - 50) / 2.5;
