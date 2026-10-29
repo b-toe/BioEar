@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils/cn";
+import { BioEarDefs, Cochlea, COCHLEA_X, Headband, Pod, POD_X, SoundWaves, Vibration, Wearer } from "@/components/art/BioEarFigure";
 
 export function BoneConductionDiagram() {
   const [mode, setMode] = useState<"air" | "bone">("bone");
@@ -25,48 +26,33 @@ export function BoneConductionDiagram() {
         ))}
       </div>
 
-      <svg viewBox="0 0 420 260" className="w-full max-w-lg" role="img" aria-label={
+      <svg viewBox="20 40 380 360" fill="none" className="w-full max-w-md" role="img" aria-label={
         mode === "air"
-          ? "Diagram showing sound traveling through the ear canal to the inner ear."
-          : "Diagram showing vibration traveling through the skull directly to the inner ear."
+          ? "Diagram showing sound travelling through the ear canal to the inner ear."
+          : "Diagram showing the BioEar pods sending vibration through the skull directly to the inner ear."
       }>
-        <path
-          d="M110 60c56 0 100 44 104 100 16 4 26 20 22 38-4 16-20 26-38 24-10 36-42 62-80 64v34h-36v-36c-46-10-78-50-78-98 0-68 52-126 106-126Z"
-          fill="var(--cream)"
-          stroke="var(--ink)"
-          strokeOpacity="0.45"
-          strokeWidth="1.5"
-        />
-        {/* ear canal */}
-        <path d="M214 128c14 6 22 18 22 32s-8 26-22 32" stroke="var(--ink)" strokeOpacity="0.35" strokeWidth="1.5" fill="none" />
-        {/* cochlea */}
-        <circle cx="252" cy="160" r="12" fill="var(--mint)" stroke="var(--ink)" strokeOpacity="0.4" strokeWidth="1.2" />
+        <BioEarDefs />
+        <Wearer ears={mode === "air"} strokeOpacity={0.3} />
+        <Cochlea x={COCHLEA_X.left} glow />
+        <Cochlea x={COCHLEA_X.right} />
 
         {mode === "air" ? (
           <>
-            {[0, 1, 2].map((i) => (
-              <path
-                key={i}
-                d={`M${40 - i * 16} 130 q 16 -22 32 0 q 16 22 32 0`}
-                stroke="var(--blue)"
-                strokeWidth="2.5"
-                fill="none"
-                strokeLinecap="round"
-                opacity={0.9 - i * 0.25}
-              />
-            ))}
-            <path d="M120 130 H210" stroke="var(--blue)" strokeWidth="3" strokeLinecap="round" opacity="0.8" />
+            <SoundWaves x={70} />
+            {/* ear canal */}
+            <path d="M98 222H140" stroke="#8fc0e8" strokeWidth="3" strokeLinecap="round" strokeDasharray="1 7" className="bioear-vibe" />
+            <path d="M96 214h44M96 230h44" stroke="var(--ink)" strokeOpacity="0.2" strokeWidth="1.2" strokeLinecap="round" />
+            <text x="118" y="270" fontSize="10" fill="var(--ink)" fillOpacity="0.5" letterSpacing="0.08em" textAnchor="middle">EAR CANAL</text>
           </>
         ) : (
           <>
-            <rect x="292" y="140" width="24" height="42" rx="10" fill="var(--peach)" stroke="var(--ink)" strokeOpacity="0.4" strokeWidth="1.2" />
-            <path
-              d="M292 161c-40 0-90 0-118 0"
-              stroke="var(--lavender)"
-              strokeWidth="4"
-              strokeLinecap="round"
-              style={{ filter: "drop-shadow(0 0 6px var(--lavender))" }}
-            />
+            <SoundWaves x={62} />
+            <Vibration side="left" strength={1.3} />
+            <Vibration side="right" strength={1.3} />
+            <Headband />
+            <Pod x={POD_X.left} side="left" mic />
+            <Pod x={POD_X.right} side="right" />
+            <text x="210" y="392" fontSize="10" fill="var(--ink)" fillOpacity="0.5" letterSpacing="0.08em" textAnchor="middle">THROUGH THE SKULL</text>
           </>
         )}
       </svg>

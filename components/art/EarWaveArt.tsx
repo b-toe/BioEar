@@ -1,38 +1,41 @@
+import { BioEarDefs, Cochlea, COCHLEA_X, Headband, Pod, POD_X, SoundWaves, Vibration, Wearer } from "./BioEarFigure";
+
+// Hero illustration of the BioEar prototype as worn. The wearer is a faint
+// outline so the device stays the focus.
 export function EarWaveArt({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 420 420" fill="none" className={className} role="img" aria-label="Illustration of sound waves traveling toward a simplified head profile, with a BioEar device at the ear.">
-      <circle cx="210" cy="210" r="190" fill="var(--lavender)" opacity="0.12" />
+    <svg viewBox="0 0 420 420" fill="none" className={className} role="img" aria-label="The BioEar headband prototype as worn: a band over the head with a bone-conduction pod at each ear, a microphone picking up sound, and vibration travelling into the skull.">
+      <BioEarDefs />
+      <defs>
+        <radialGradient id="ew-halo" cx="0.5" cy="0.45" r="0.55">
+          <stop offset="0" stopColor="var(--lavender)" stopOpacity="0.34" />
+          <stop offset="1" stopColor="var(--blue)" stopOpacity="0.08" />
+        </radialGradient>
+      </defs>
 
-      {/* head silhouette */}
-      <path
-        d="M180 120c48 0 82 36 86 82 14 4 22 18 18 34-4 14-18 22-32 20-8 30-34 54-68 58v30h-30v-32c-40-8-68-42-68-84 0-56 44-108 94-108Z"
-        fill="var(--cream)"
-        stroke="var(--ink)"
-        strokeOpacity="0.5"
-        strokeWidth="1.5"
-      />
+      <circle cx="210" cy="210" r="198" fill="url(#ew-halo)" />
 
-      {/* ear + device */}
-      <g className="animate-breathing" style={{ transformOrigin: "268px 210px" }}>
-        <path d="M258 190c10-6 22-2 24 10 2 10-4 18-14 20" stroke="var(--ink)" strokeOpacity="0.55" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-        <rect x="264" y="176" width="14" height="52" rx="7" fill="var(--peach)" stroke="var(--ink)" strokeOpacity="0.4" strokeWidth="1.2" />
+      <Wearer />
+      <Cochlea x={COCHLEA_X.left} />
+      <Cochlea x={COCHLEA_X.right} />
+      <Vibration side="left" />
+      <Vibration side="right" />
+      <Headband />
+      <Pod x={POD_X.left} side="left" mic />
+      <Pod x={POD_X.right} side="right" />
+      <SoundWaves />
+
+      <g fontSize="9.5" fill="var(--ink)" fillOpacity="0.6" letterSpacing="0.08em" fontWeight="500">
+        <g fill="none" stroke="var(--ink)" strokeOpacity="0.25">
+          <path d="M100 216L64 150H30" />
+          <path d="M306 104L330 74H372" />
+          <path d="M330 256L352 300H392" />
+        </g>
+        <text x="30" y="144">MIC</text>
+        <text x="330" y="68">DSP + BATTERY</text>
+        <text x="352" y="316">ACTUATOR</text>
+        <text x="210" y="404" textAnchor="middle" fillOpacity="0.45">VIBRATION → INNER EAR</text>
       </g>
-
-      {/* sound waves */}
-      {[0, 1, 2].map((i) => (
-        <path
-          key={i}
-          d={`M${60 - i * 18} 210 q 20 -${28 + i * 6} 40 0 q 20 ${28 + i * 6} 40 0`}
-          stroke="var(--blue)"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          fill="none"
-          opacity={0.9 - i * 0.2}
-        />
-      ))}
-
-      <circle cx="182" cy="188" r="2.6" fill="var(--ink)" opacity="0.7" />
-      <circle cx="196" cy="188" r="2.6" fill="var(--ink)" opacity="0.7" />
     </svg>
   );
 }

@@ -1,11 +1,45 @@
+// Two people talking; the listener on the right wears the BioEar headband.
 export function AccessibilityArt({ className }: { className?: string }) {
+  const bust = (x: number, fill: string) => (
+    <g stroke="var(--ink)" strokeOpacity="0.35" strokeWidth="1.4" strokeLinecap="round">
+      <path d={`M${x - 54} 210c0-34 22-54 54-54s54 20 54 54`} fill={fill} fillOpacity="0.55" />
+      <path d={`M${x - 10} 140v18M${x + 10} 140v18`} />
+      <path d={`M${x} 64c26 0 40 18 40 42 0 26-16 44-40 44s-40-18-40-44c0-24 14-42 40-42Z`} fill="var(--cream)" />
+    </g>
+  );
+
   return (
-    <svg viewBox="0 0 300 200" fill="none" className={className} role="img" aria-label="Two abstract figures communicating.">
-      <circle cx="90" cy="70" r="24" fill="var(--peach)" opacity="0.5" />
-      <path d="M60 150c0-30 22-46 30-46s30 16 30 46" stroke="var(--ink)" strokeOpacity="0.4" strokeWidth="1.5" fill="none" />
-      <circle cx="210" cy="70" r="24" fill="var(--mint)" opacity="0.6" />
-      <path d="M180 150c0-30 22-46 30-46s30 16 30 46" stroke="var(--ink)" strokeOpacity="0.4" strokeWidth="1.5" fill="none" />
-      <path d="M118 90 Q150 60 182 90" stroke="var(--blue)" strokeWidth="2" strokeDasharray="4 6" fill="none" />
+    <svg viewBox="0 0 360 220" fill="none" className={className} role="img" aria-label="Two people in conversation. The listener wears the BioEar headband, which turns the speaker's voice into vibration.">
+      <circle cx="180" cy="120" r="100" fill="var(--lavender)" opacity="0.18" />
+
+      {bust(84, "var(--mint)")}
+      {bust(276, "var(--blue)")}
+
+      {/* faces */}
+      <g stroke="var(--ink)" strokeOpacity="0.45" strokeWidth="1.4" strokeLinecap="round">
+        <path d="M72 100h6M90 100h6M77 124c4 3 10 3 14 0" />
+        <path d="M256 100h6M276 100h6M262 124c4 2 10 2 14 0" />
+      </g>
+
+      {/* BioEar headband on the listener */}
+      <path d="M232 112c-4-38 18-58 44-58s48 20 44 58" stroke="var(--ink)" strokeOpacity="0.45" strokeWidth="8" strokeLinecap="round" />
+      <path d="M232 112c-4-38 18-58 44-58s48 20 44 58" stroke="var(--lavender)" strokeWidth="6" strokeLinecap="round" />
+      <rect x="225" y="100" width="14" height="28" rx="7" fill="var(--peach)" stroke="var(--ink)" strokeOpacity="0.45" strokeWidth="1.2" />
+      <rect x="313" y="100" width="14" height="28" rx="7" fill="var(--peach)" stroke="var(--ink)" strokeOpacity="0.45" strokeWidth="1.2" />
+      <path d="M244 108q3 6 0 12M249 105q4 9 0 18" stroke="var(--lavender)" strokeWidth="2" strokeLinecap="round" className="bioear-vibe" />
+
+      {/* speech travelling to the listener */}
+      {[0, 1, 2].map((i) => (
+        <path
+          key={i}
+          d={`M${140 + i * 16} ${100 - i * 6}a${18 + i * 6} ${18 + i * 6} 0 0 1 0 ${36 + i * 12}`}
+          stroke="#8fc0e8"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          className="bioear-sound"
+          style={{ animationDelay: `${i * 0.3}s` }}
+        />
+      ))}
     </svg>
   );
 }

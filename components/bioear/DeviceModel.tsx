@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils/cn";
+import { BioEarDefs, Headband, Pod, POD_X } from "@/components/art/BioEarFigure";
 
+// Positions are in the shared BioEarFigure coordinate space.
 const HOTSPOTS = [
-  { id: "microphone", x: 96, y: 70, label: "Microphone", description: "Captures environmental sound." },
-  { id: "processor", x: 150, y: 46, label: "Processor", description: "Shapes and filters the digital signal." },
-  { id: "battery", x: 150, y: 96, label: "Battery", description: "Powers the entire system." },
-  { id: "amplifier", x: 190, y: 70, label: "Amplifier", description: "Boosts the signal before actuation." },
-  { id: "actuator", x: 226, y: 96, label: "Actuator", description: "Converts signal into vibration." },
-  { id: "headband", x: 130, y: 20, label: "Headband", description: "Holds the device in place against the skull." },
+  { id: "microphone", x: 104, y: 218, label: "Microphone", description: "Captures environmental sound." },
+  { id: "processor", x: 280, y: 104, label: "Processor", description: "Shapes and filters the digital signal." },
+  { id: "battery", x: 302, y: 130, label: "Battery", description: "Powers the entire system." },
+  { id: "amplifier", x: 316, y: 216, label: "Amplifier", description: "Boosts the signal before actuation." },
+  { id: "actuator", x: 300, y: 252, label: "Actuator", description: "Converts signal into vibration." },
+  { id: "headband", x: 158, y: 76, label: "Headband", description: "Holds the device in place against the skull." },
 ];
 
 export function DeviceModel() {
@@ -19,19 +21,24 @@ export function DeviceModel() {
   return (
     <div className="grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:items-center">
       <div className="relative">
-        <svg viewBox="0 0 300 160" className="w-full" role="img" aria-label="Interactive diagram of the BioEar prototype with selectable components.">
-          <path d="M70 100c0-38 36-70 80-70s80 32 80 70-36 50-80 50-80-12-80-50Z" fill="var(--cream)" stroke="var(--ink)" strokeOpacity="0.3" strokeWidth="1.5" />
-          <path d="M90 30c20-14 100-14 120 0" stroke="var(--lavender)" strokeWidth="5" strokeLinecap="round" fill="none" opacity="0.7" />
+        <svg viewBox="60 36 300 270" fill="none" className="w-full" role="img" aria-label="Interactive diagram of the BioEar prototype with selectable components.">
+          <BioEarDefs />
+          <ellipse cx="210" cy="292" rx="120" ry="10" fill="var(--lavender)" opacity="0.35" />
+          <Headband />
+          <Pod x={POD_X.left} side="left" mic animate={false} />
+          <Pod x={POD_X.right} side="right" animate={false} />
           {HOTSPOTS.map((h) => (
             <g key={h.id}>
               <circle
                 cx={h.x}
                 cy={h.y}
-                r={activeId === h.id ? 10 : 7}
-                fill={activeId === h.id ? "var(--lavender)" : "var(--peach)"}
+                r={activeId === h.id ? 8 : 6}
+                fill={activeId === h.id ? "var(--ink)" : "#fff"}
+                fillOpacity={activeId === h.id ? 0.75 : 0.9}
                 stroke="var(--ink)"
-                strokeOpacity="0.35"
-                strokeWidth="1"
+                strokeOpacity="0.6"
+                strokeWidth="1.5"
+                className={activeId === h.id ? undefined : "bioear-vibe"}
                 style={{ transition: "r 200ms ease" }}
               />
               <circle

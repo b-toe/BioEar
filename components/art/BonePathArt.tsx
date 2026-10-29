@@ -1,23 +1,21 @@
+import { BioEarDefs, Cochlea, COCHLEA_X, Headband, Pod, POD_X, Vibration, Wearer } from "./BioEarFigure";
+
 export function BonePathArt({ active = true, className }: { active?: boolean; className?: string }) {
   return (
-    <svg viewBox="0 0 400 300" fill="none" className={className} role="img" aria-label="Diagram of vibration traveling through the skull to the inner ear.">
-      <path
-        d="M120 90c40-24 100-24 140 4 26 18 40 46 38 78-2 34-24 62-56 74-6 22-26 38-50 38-30 0-54-24-56-54-30-6-52-32-52-64 0-30 16-56 36-76Z"
-        fill="var(--cream)"
-        stroke="var(--ink)"
-        strokeOpacity="0.45"
-        strokeWidth="1.5"
-      />
-      <circle cx="270" cy="150" r="10" fill="var(--mint)" stroke="var(--ink)" strokeOpacity="0.4" strokeWidth="1.2" />
-      <path
-        d="M270 150c-40 0-80 6-110 26"
-        stroke={active ? "var(--lavender)" : "var(--ink)"}
-        strokeOpacity={active ? 1 : 0.25}
-        strokeWidth={active ? 4 : 1.5}
-        strokeLinecap="round"
-        style={active ? { filter: "drop-shadow(0 0 6px var(--lavender))" } : undefined}
-      />
-      <circle cx="158" cy="178" r="7" fill="var(--peach)" stroke="var(--ink)" strokeOpacity="0.4" strokeWidth="1" />
+    <svg viewBox="40 40 340 360" fill="none" className={className} role="img" aria-label="Diagram of the BioEar pods sending vibration through the skull to the inner ear.">
+      <BioEarDefs />
+      <Wearer strokeOpacity={0.3} />
+      <Cochlea x={COCHLEA_X.left} glow={active} />
+      <Cochlea x={COCHLEA_X.right} glow={active} />
+      {active && (
+        <>
+          <Vibration side="left" strength={1.3} />
+          <Vibration side="right" strength={1.3} />
+        </>
+      )}
+      <Headband />
+      <Pod x={POD_X.left} side="left" mic animate={active} />
+      <Pod x={POD_X.right} side="right" animate={active} />
     </svg>
   );
 }

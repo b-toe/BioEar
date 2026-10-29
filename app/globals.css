@@ -90,3 +90,35 @@ body {
 .animate-breathing {
   animation: breathing 4s ease-in-out infinite;
 }
+
+/* Vibration rings leaving the BioEar actuator */
+@keyframes bioear-ripple {
+  from { transform: scale(0.4); opacity: 0.9; }
+  to { transform: scale(4.2); opacity: 0; }
+}
+
+.bioear-ripple {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bioear-ripple 2.7s ease-out infinite;
+}
+
+/* Incoming sound waves drifting toward the wearer */
+@keyframes bioear-sound {
+  0%, 100% { transform: translateX(0); opacity: 0.35; }
+  50% { transform: translateX(6px); opacity: 0.95; }
+}
+
+.bioear-sound {
+  animation: bioear-sound 2.4s ease-in-out infinite;
+}
+
+/* Vibration pulsing from the actuator pads into the skull */
+@keyframes bioear-vibe {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+.bioear-vibe {
+  animation: bioear-vibe 1.2s ease-in-out infinite;
+}
