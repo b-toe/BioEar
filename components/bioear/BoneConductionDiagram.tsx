@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils/cn";
-import { BioEarDefs, Cochlea, COCHLEA_X, Headband, Pod, POD_X, SoundWaves, Vibration, Wearer } from "@/components/art/BioEarFigure";
+import { BackBand, BandHint, BioEarDefs, Cochlea, COCHLEA_X, Cup, SoundWaves, Vibration, Wearer } from "@/components/art/BioEarFigure";
 
 export function BoneConductionDiagram() {
   const [mode, setMode] = useState<"air" | "bone">("bone");
@@ -26,12 +26,13 @@ export function BoneConductionDiagram() {
         ))}
       </div>
 
-      <svg viewBox="20 40 380 360" fill="none" className="w-full max-w-md" role="img" aria-label={
+      <svg viewBox="20 60 380 340" fill="none" className="w-full max-w-md" role="img" aria-label={
         mode === "air"
           ? "Diagram showing sound travelling through the ear canal to the inner ear."
-          : "Diagram showing the BioEar pods sending vibration through the skull directly to the inner ear."
+          : "Diagram showing the BioEar cups sending vibration through the skull directly to the inner ear."
       }>
         <BioEarDefs />
+        {mode === "bone" && <BackBand />}
         <Wearer ears={mode === "air"} strokeOpacity={0.3} />
         <Cochlea x={COCHLEA_X.left} glow />
         <Cochlea x={COCHLEA_X.right} />
@@ -46,12 +47,12 @@ export function BoneConductionDiagram() {
           </>
         ) : (
           <>
-            <SoundWaves x={62} />
+            <SoundWaves x={58} />
+            <BandHint />
             <Vibration side="left" strength={1.3} />
             <Vibration side="right" strength={1.3} />
-            <Headband />
-            <Pod x={POD_X.left} side="left" mic />
-            <Pod x={POD_X.right} side="right" />
+            <Cup side="left" mic />
+            <Cup side="right" />
             <text x="210" y="392" fontSize="10" fill="var(--ink)" fillOpacity="0.5" letterSpacing="0.08em" textAnchor="middle">THROUGH THE SKULL</text>
           </>
         )}
@@ -60,7 +61,7 @@ export function BoneConductionDiagram() {
       <p className="mt-4 max-w-md text-sm leading-relaxed text-gray">
         {mode === "air"
           ? "Sound travels through the ear canal to the middle and inner ear — the conventional hearing pathway."
-          : "BioEar's actuator transmits vibration through the skull, reaching the same inner ear without using the ear canal."}
+          : "BioEar's cups press an actuator against the bone behind each ear and send vibration through the skull, reaching the same inner ear without using the ear canal."}
       </p>
     </div>
   );

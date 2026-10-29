@@ -2,16 +2,16 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils/cn";
-import { BioEarDefs, Headband, Pod, POD_X } from "@/components/art/BioEarFigure";
+import { BioEarDefs, DeviceProduct } from "@/components/art/BioEarFigure";
 
 // Positions are in the shared BioEarFigure coordinate space.
 const HOTSPOTS = [
-  { id: "microphone", x: 104, y: 218, label: "Microphone", description: "Captures environmental sound." },
-  { id: "processor", x: 280, y: 104, label: "Processor", description: "Shapes and filters the digital signal." },
-  { id: "battery", x: 302, y: 130, label: "Battery", description: "Powers the entire system." },
-  { id: "amplifier", x: 316, y: 216, label: "Amplifier", description: "Boosts the signal before actuation." },
-  { id: "actuator", x: 300, y: 252, label: "Actuator", description: "Converts signal into vibration." },
-  { id: "headband", x: 158, y: 76, label: "Headband", description: "Holds the device in place against the skull." },
+  { id: "microphone", x: 60, y: 224, label: "Microphone", description: "Sits in the cup lid to capture environmental sound." },
+  { id: "processor", x: 362, y: 226, label: "Processor", description: "Lives inside the cup and shapes and filters the digital signal." },
+  { id: "battery", x: 363, y: 242, label: "Battery", description: "A small cell inside the cup that powers the entire system." },
+  { id: "amplifier", x: 340, y: 210, label: "Amplifier", description: "Boosts the signal before actuation." },
+  { id: "actuator", x: 100, y: 232, label: "Actuator", description: "Faces the skull from the inner side of the cup and converts the signal into vibration." },
+  { id: "headband", x: 120, y: 120, label: "Elastic band", description: "Wraps around the back of the head and holds both cups firmly against the bone behind the ears." },
 ];
 
 export function DeviceModel() {
@@ -21,12 +21,9 @@ export function DeviceModel() {
   return (
     <div className="grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:items-center">
       <div className="relative">
-        <svg viewBox="60 36 300 270" fill="none" className="w-full" role="img" aria-label="Interactive diagram of the BioEar prototype with selectable components.">
+        <svg viewBox="20 60 400 250" fill="none" className="w-full" role="img" aria-label="Interactive diagram of the BioEar prototype with selectable components.">
           <BioEarDefs />
-          <ellipse cx="210" cy="292" rx="120" ry="10" fill="var(--lavender)" opacity="0.35" />
-          <Headband />
-          <Pod x={POD_X.left} side="left" mic animate={false} />
-          <Pod x={POD_X.right} side="right" animate={false} />
+          <DeviceProduct head={false} />
           {HOTSPOTS.map((h) => (
             <g key={h.id}>
               <circle
